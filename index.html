@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sondaggio Super Interattivo</title>
+    <style>
+        /* CSS in gran parte invariato, con piccole aggiunte */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .survey-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+            overflow: hidden;
+            position: relative; /* Necessario per il posizionamento degli alert */
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .page.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            text-align: center;
+            color: #1c1e21;
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #dddfe2;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        img.survey-image {
+            width: 100%;
+            height: 250px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            object-fit: cover;
+            background-color: #eee;
+        }
+
+        .slider-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .slider-icon {
+            font-size: 28px;
+            transition: transform 0.2s ease-out;
+        }
+        input[type="range"] {
+            -webkit-appearance: none; appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            outline: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 20px; height: 20px;
+            background: #007bff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px; height: 20px;
+            background: #007bff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+        .btn {
+            padding: 12px 25px; font-size: 16px; font-weight: 600;
+            border: none; border-radius: 6px; cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s, opacity 0.3s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-primary:hover:not(:disabled) { background-color: #0056b3; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-secondary:hover { background-color: #5a6268; }
+        .btn-submit { background-color: #28a745; color: white; width: 100%; }
+        .btn-submit:hover { background-color: #218838; }
+
+        /* 3. MODIFICA: Stile per il pulsante disabilitato */
+        .btn:disabled {
+            background-color: #a9cce3;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* 1. MODIFICA: Stile per l'alert personalizzato */
+        .custom-alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none; /* Nascosto di default */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .custom-alert-box {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+            animation: fadeIn 0.3s;
+        }
+        .custom-alert-box p {
+            margin: 0 0 20px 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="survey-container">
+        <form id="multi-page-survey" action="https://formspree.io/f/xqaboqnq" method="POST">
+            
+            <!-- PAGINA 1: Statica, solo per il nome -->
+            <div class="page" id="page-start">
+                <h2>Iniziamo!</h2>
+                <label for="nome">Inserisci il tuo nome:</label>
+                <input type="text" id="nome" name="nome" placeholder="Inserisci il nome qua" autocomplete="off" required>
+                
+                <div class="navigation-buttons" style="justify-content: flex-end;">
+                    <button type="button" class="btn btn-primary" onclick="nextPage()">Avanti</button>
+                </div>
+            </div>
+
+            <!-- Contenitore per le pagine generate dinamicamente -->
+            <div id="dynamic-pages-container"></div>
+
+            <!-- PAGINA FINALE: Statica, per invio -->
+            <div class="page" id="page-final">
+                <h2>Fatto!</h2>
+                <p>Grazie per la tua partecipazione! Clicca qui sotto per inviare le tue risposte.</p>
+                <div class="navigation-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="prevPage()">Indietro</button>
+                    <button type="submit" class="btn btn-submit">Invia Sondaggio</button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- 1. MODIFICA: Struttura HTML per l'alert personalizzato -->
+    <div class="custom-alert-overlay" id="customAlertOverlay">
+        <div class="custom-alert-box">
+            <p id="customAlertMessage"></p>
+            <button class="btn btn-primary" onclick="hideCustomAlert()">OK</button>
+        </div>
+    </div>
+
+
+    <script>
+        // ====================================================================
+        // CONFIGURAZIONE DEL SONDAGGIO
+        // ====================================================================
+        const surveyData = [
+            { title: "Ti piace la spiaggia?", imageUrl: "https://img.spiagge.it/images/site/msm/62eb7502914ff-1659598082.webp", name: "valutazione_spiaggia" },
+            { title: "Ti piace la montagna?", imageUrl: "https://siviaggia.it/wp-content/uploads/sites/2/2023/03/Le-Vie-Storiche-di-Montagna.jpg?w=687&h=386&quality=90&strip=all&crop=1", name: "valutazione_montagna" },
+            { title: "Facciamo tutti e due?", imageUrl: "https://get.pxhere.com/photo/beach-landscape-sea-coast-ocean-mountain-sky-shore-mountain-range-vacation-coastline-cliff-cove-mediterranean-bay-italy-rocky-fjord-terrain-body-of-water-clouds-mountains-italian-cape-landform-amalfi-geographical-feature-1195939.jpg", name: "valutazione_misto" },
+            { title: "Andiamo all'estero?", imageUrl: "https://www.melhoresdestinos.com.br/wp-content/uploads/2019/02/passagens-aereas-berlim-capa2019-03.jpg", name: "valutazione_estero" },
+            { title: "Visitiamo una o più città italiana/e?", imageUrl: "https://media.routard.com/image/37/5/fb-florence.1516375.jpg", name: "valutazione_citta" },
+            { title: "Ti va di dormire in tenda?", imageUrl: "http://img.freepik.com/premium-photo/tent-camp-orange-tents-plateau-mountain-valley-point_666746-1076.jpg", name: "valutazione_tenda" },
+            { title: "Affittiamo un appartamentino", imageUrl: "https://immobiliarequintarelli.it/html/uploads/2022/10/appartamento-residence-le-betulle-soggiorno-immobiliare-quintarelli.jpg", name: "valutazione_appartamento" },
+            { title: "Ci facciamo ospitare?", imageUrl: "https://i.pinimg.com/originals/7a/ca/b0/7acab0815859aeab16c79efbe2c06177.jpg", name: "valutazione_essere_ospitati" },
+            { title: "Puoi ospitare? (anche in giardino in tenda)", imageUrl: "https://thumbs.dreamstime.com/b/meeting-friends-young-female-guy-girl-near-front-door-to-yard-welcome-youth-friendship-students-256945930.jpg", name: "valutazione_ospitare" }
+        ];
+        // ====================================================================
+
+        let currentPageIndex = 0;
+        let pages = [];
+
+        const dynamicPagesContainer = document.getElementById('dynamic-pages-container');
+
+        // --- INIZIO MODIFICHE RICHIESTE ---
+
+        // 1. MODIFICA: Funzioni per gestire l'alert personalizzato
+        const customAlertOverlay = document.getElementById('customAlertOverlay');
+        const customAlertMessage = document.getElementById('customAlertMessage');
+
+        function showCustomAlert(message) {
+            customAlertMessage.textContent = message;
+            customAlertOverlay.style.display = 'flex';
+        }
+
+        function hideCustomAlert() {
+            customAlertOverlay.style.display = 'none';
+        }
+
+        // 2. MODIFICA: Funzione per ottenere parametri dall'URL
+        function getParameterByName(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // --- FINE MODIFICHE RICHIESTE ---
+
+
+        function updateIconSize(slider) {
+            const wrapper = slider.closest('.slider-wrapper');
+            const thumbIcon = wrapper.querySelector('.icon-thumb');
+            const smileIcon = wrapper.querySelector('.icon-smile');
+            const value = slider.value; 
+            const MAX_SCALE_INCREASE = 0.5;
+            const thumbScale = 1 + MAX_SCALE_INCREASE * ((100 - value) / 100);
+            const smileScale = 1 + MAX_SCALE_INCREASE * (value / 100);
+            thumbIcon.style.transform = `scale(${thumbScale})`;
+            smileIcon.style.transform = `scale(${smileScale})`;
+        }
+
+        function generateSurveyPages() {
+            surveyData.forEach((data, index) => {
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'page';
+                // 3. MODIFICA: Aggiunto 'disabled' al pulsante "Avanti"
+                pageDiv.innerHTML = `
+                    <h2>${data.title} (${index + 1}/${surveyData.length})</h2>
+                    <img src="${data.imageUrl}" alt="${data.title}" class="survey-image">
+                    
+                    <div class="slider-wrapper">
+                        <span class="slider-icon icon-thumb">👎</span>
+                        <input type="range" min="0" max="100" value="50" class="satisfaction-slider" name="${data.name}" required>
+                        <span class="slider-icon icon-smile">🤩</span>
+                    </div>
+
+                    <div class="navigation-buttons">
+                        <button type="button" class="btn btn-secondary" onclick="prevPage()">Indietro</button>
+                        <button type="button" class="btn btn-primary" onclick="nextPage()" disabled>Avanti</button>
+                    </div>
+                `;
+                dynamicPagesContainer.appendChild(pageDiv);
+            });
+        }
+        
+        function showPage(index) {
+            pages.forEach(page => page.classList.remove('active'));
+            pages[index].classList.add('active');
+            currentPageIndex = index;
+        }
+
+        function nextPage() {
+            if (currentPageIndex === 0) { // Validazione nome
+                if (document.getElementById('nome').value.trim() === '') {
+                    // 1. MODIFICA: Utilizzo dell'alert personalizzato
+                    showCustomAlert('Per favore, inserisci il tuo nome per continuare.');
+                    return;
+                }
+                else {
+                    // 1. MODIFICA: Utilizzo dell'alert personalizzato
+                    showCustomAlert('Usa tutta la scala! Non mettere solo 0 e 100 :)');
+                }
+            }
+            if (currentPageIndex < pages.length - 1) {
+                showPage(currentPageIndex + 1);
+            }
+        }
+
+        function prevPage() {
+            if (currentPageIndex > 0) {
+                showPage(currentPageIndex - 1);
+            }
+        }
+        
+        // --- Inizializzazione dell'Applicazione ---
+        
+        // 1. Genera l'HTML delle pagine del sondaggio
+        generateSurveyPages();
+        
+        // 2. Colleziona tutte le pagine (statiche + dinamiche) nell'ordine corretto
+        pages = document.querySelectorAll('.page');
+        
+        // 3. Aggiungi gli "event listener" a tutti gli slider
+        document.querySelectorAll('.satisfaction-slider').forEach(slider => {
+            updateIconSize(slider); // Imposta la dimensione iniziale delle icone
+            
+            // 3. MODIFICA: Aggiunto listener per attivare il pulsante "Avanti"
+            slider.addEventListener('input', (event) => {
+                const currentSlider = event.target;
+                updateIconSize(currentSlider); // Aggiorna le icone mentre si muove
+
+                // Abilita il pulsante "Avanti" nella pagina corrente
+                const currentPage = currentSlider.closest('.page');
+                const nextButton = currentPage.querySelector('.btn-primary');
+                if (nextButton) {
+                    nextButton.disabled = false;
+                }
+            });
+        });
+
+        // 4. MODIFICA: Pre-compila il nome se presente nell'URL
+        const nomeFromUrl = getParameterByName('nome');
+        if (nomeFromUrl) {
+            document.getElementById('nome').value = nomeFromUrl;
+        }
+
+        // 5. Mostra la prima pagina per iniziare
+        showPage(0);
+
+    </script>
+</body>
+</html>
