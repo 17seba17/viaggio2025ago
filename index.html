@@ -16,6 +16,27 @@
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
+
+            /* --- MODIFICA AGGIUNTA: Miglioramento Interazione Mobile --- */
+            /* Impedisce la selezione del testo (e quindi il menu copia/incolla) */
+            -webkit-user-select: none;  /* Safari, Chrome */
+            -moz-user-select: none;     /* Firefox */
+            -ms-user-select: none;      /* IE */
+            user-select: none;          /* Sintassi standard */
+
+            /* Disabilita il menu contestuale su tocco prolungato in iOS */
+            -webkit-touch-callout: none; 
+
+            /* Rimuove l'evidenziazione al tocco su link/bottoni */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Ri-abilita la selezione solo per i campi di testo, dove è utile */
+        input[type="text"] {
+            -webkit-user-select: auto;
+            -moz-user-select: auto;
+            -ms-user-select: auto;
+            user-select: auto;
         }
 
         .survey-container {
